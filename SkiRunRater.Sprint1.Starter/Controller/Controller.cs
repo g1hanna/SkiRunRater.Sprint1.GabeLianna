@@ -30,6 +30,20 @@ namespace SkiRunRater
 
         #region METHODS
 
+        private static List<SkiRun> OrderSkiRunsList(List<SkiRun> skiRuns)
+        {
+            List<SkiRun> sortedList = skiRuns;
+
+            sortedList.Sort((skiRun1, skiRun2) =>
+            {
+                if (skiRun1.ID > skiRun2.ID) return 1;
+                else if (skiRun1.ID < skiRun2.ID) return -1;
+                else return 0;
+            });
+
+            return sortedList;
+        }
+
         private void ApplicationControl()
         {
             SkiRunRepository skiRunRepository = new SkiRunRepository();
@@ -44,9 +58,9 @@ namespace SkiRunRater
                 {
                     AppEnum.ManagerAction userActionChoice;
 
-                    int skiRunID;
-                    SkiRun skiRun;
-                    string message;
+                    int skiRunID = -1;
+                    SkiRun skiRun = null;
+                    string message = string.Empty;
 
                     userActionChoice = ConsoleView.GetUserActionChoice();
 
@@ -62,25 +76,42 @@ namespace SkiRunRater
                             break;
                         case AppEnum.ManagerAction.DeleteSkiRun:
                             skiRunID = ConsoleView.DeleteSkiRun(skiRuns);
+                            skiRuns.RemoveAll((s) => s.ID == skiRunID);
                             skiRunRepository.DeleteSkiRun(skiRunID);
                             ConsoleView.DisplayReset();
                             ConsoleView.DisplayMessage($"Ski run {skiRunID} has been deleted.");
                             ConsoleView.DisplayContinuePrompt();
                             break;
                         case AppEnum.ManagerAction.AddSkiRun:
-                            //
-                            // TODO: Implement add ski run method
-                            //
+                            skiRun = ConsoleView.AddSkiRun(skiRuns);
+                            skiRunRepository.InsertSkiRun(skiRun);
+                            skiRuns.Add(skiRun);
+                            skiRuns = OrderSkiRunsList(skiRuns);
+                            skiRunRepository.WriteSkiRunsData();
+                            ConsoleView.DisplayReset();
+                            ConsoleView.DisplayMessage($"New ski run {skiRun.ID} added.");
+                            ConsoleView.DisplayContinuePrompt();
                             break;
                         case AppEnum.ManagerAction.UpdateSkiRun:
                             //
                             // TODO: Implement update ski run method
                             //
+                            skiRun = ConsoleView.UpdateSkiRun(skiRuns, out skiRunID);
+                            skiRunRepository.UpdateSkiRun(skiRun);
+                            skiRuns.RemoveAll((s) => { return s.ID == skiRunID; });
+                            skiRuns.Add(skiRun);
+                            skiRuns = OrderSkiRunsList(skiRuns);
+                            skiRunRepository.WriteSkiRunsData();
+                            ConsoleView.DisplayReset();
+                            ConsoleView.DisplayMessage($"Ski run {skiRun.ID} has been updated.");
+                            ConsoleView.DisplayContinuePrompt();
                             break;
                         case AppEnum.ManagerAction.QuerySkiRunsByVertical:
                             //
                             // TODO: Implement query ski run method
                             //
+                            ConsoleView.QuerySkiRunsByVertical(skiRuns);
+                            ConsoleView.DisplayContinuePrompt();
                             break;
                         case AppEnum.ManagerAction.Quit:
                             active = false;

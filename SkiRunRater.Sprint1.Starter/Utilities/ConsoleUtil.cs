@@ -116,5 +116,29 @@ namespace SkiRunRater
 
             return userResponseInteger;
         }
+
+        /// <summary>
+        /// Checks a string against a pattern to check it for a specific pattern.
+        /// </summary>
+        /// <param name="promptMessage">A detailed message indicating the string's requirements.</param>
+        /// <param name="userResponse">The user's input.</param>
+        /// <param name="condition">The pattern to check the user's response against.</param>
+        /// <returns></returns>
+        public static string ValidateStringResponse(string promptMessage, string userResponse, Predicate<string> condition)
+        {
+            while (!condition(userResponse))
+            {
+                ConsoleView.DisplayReset();
+
+                ConsoleView.DisplayMessage("");
+                ConsoleView.DisplayMessage("It appears your input did not match the requirements.");
+
+                ConsoleView.DisplayMessage("");
+                ConsoleView.DisplayPromptMessage(promptMessage);
+                userResponse = Console.ReadLine();
+            }
+
+            return userResponse;
+        }
     }
 }

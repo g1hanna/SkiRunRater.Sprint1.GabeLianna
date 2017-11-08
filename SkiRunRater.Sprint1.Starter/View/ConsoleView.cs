@@ -35,7 +35,7 @@ namespace SkiRunRater
         #endregion
 
         #region METHODS
-
+        // View/Screen functions
         /// <summary>
         /// method to display the manager menu and get the user's choice
         /// </summary>
@@ -210,6 +210,10 @@ namespace SkiRunRater
             DisplayMessage($"Vertical: {skiRunWeWant.Vertical}");
         }
 
+        /// <summary>
+        /// Display all ski runs without switching to a new screen
+        /// </summary>
+        /// <param name="skiRuns">The list of ski runs to display</param>
         private static void DisplayAllSkiRunsWithoutResettingDisplay(List<SkiRun> skiRuns)
         {
             StringBuilder columnHeader = new StringBuilder();
@@ -243,6 +247,307 @@ namespace SkiRunRater
             DisplayMessage("");
 
             DisplayAllSkiRunsWithoutResettingDisplay(skiRuns);
+        }
+
+        /// <summary>
+        /// Adds a ski run to the list of ski runs
+        /// </summary>
+        /// <param name="skiRuns">The ski run list to check against for ID errors</param>
+        public static SkiRun AddSkiRun(List<SkiRun> skiRuns)
+        {
+            SkiRun result = new SkiRun(-1, "", 0);
+
+            //
+            // get SkiRun.ID
+            //
+            while (true)
+            {
+                int idTemp = GetNewSkiRunID(skiRuns);
+                
+                if (idTemp == -1)
+                {
+                    DisplayReset();
+
+                    DisplayMessage("");
+                    DisplayMessage("There is an object with that ID.");
+                    DisplayMessage("Please provide an ID that does not already exist.");
+                }
+                else if (idTemp == -2)
+                {
+                    DisplayReset();
+
+                    DisplayMessage("");
+                    DisplayMessage("That is an invalid ID.");
+                    DisplayMessage("Please provide a positive non-zero integer ID.");
+                }
+                else
+                {
+                    result.ID = idTemp;
+                    break;
+                }
+            }
+
+            DisplayContinuePrompt();
+
+            //
+            // get SkiRun.Name
+            //
+            result.Name = GetNewSkiRunName();
+            DisplayContinuePrompt();
+
+            //
+            // get SkiRun.Vertical
+            //
+            while(true)
+            {
+                bool success;
+                result.Vertical = GetNewSkiRunVertical(out success);
+
+                if (!success)
+                {
+                    DisplayMessage("");
+                    DisplayMessage("That is an invalid vertical height.");
+                    DisplayMessage("Please provide a non-negative integer height.");
+                }
+                else break;
+            }
+            DisplayContinuePrompt();
+
+
+            return result;
+        }
+
+        /// <summary>
+        /// Prompts the user for the ID of a ski run to change and new details for it.
+        /// </summary>
+        /// <param name="skiRuns">The list of ski runs to use and update</param>
+        /// <returns></returns>
+        public static SkiRun UpdateSkiRun(List<SkiRun> skiRuns, out int skiRunID)
+        {
+            //
+            // Get a ski run ID
+            //
+            int idTemp = -1;
+            while (true)
+            {
+                idTemp = GetSkiRunID(skiRuns);
+
+                if (idTemp != -1) break;
+                else
+                {
+                    DisplayReset();
+
+                    DisplayMessage("");
+                    DisplayMessage("That ID does not match any ski run in the list.");
+                    DisplayMessage("Please provide an ID of a ski run that exists.");
+                }
+            }
+
+            skiRunID = idTemp;
+
+            // use a predicate to retreive the desired object
+            SkiRun skiRun = skiRuns.Find((sr) => (sr.ID == idTemp));
+
+            //
+            // get SkiRun.Name
+            //
+            skiRun.Name = GetNewSkiRunName();
+            DisplayContinuePrompt();
+
+            //
+            // get SkiRun.Vertical
+            //
+            int verticalTemp;
+            while (true)
+            {
+                bool success;
+                verticalTemp = GetNewSkiRunVertical(out success);
+
+                if (!success)
+                {
+                    DisplayMessage("");
+                    DisplayMessage("That is an invalid vertical height.");
+                    DisplayMessage("Please provide a non-negative integer height.");
+                }
+                else break;
+            }
+            skiRun.Vertical = verticalTemp;
+
+            DisplayContinuePrompt();
+            
+            return skiRun;
+        }
+
+
+        public static void QuerySkiRunsByVertical(List<SkiRun> skiRuns)
+        {
+            int minimumVertical;
+            int maximumVertical;
+
+            // loop until valid range provided
+            while (true)
+            {
+                // Get a minimum height
+                DisplayReset();
+                DisplayPromptMessage("Enter a minimum vertical height: ");
+
+                minimumVertical = ConsoleUtil.ValidateIntegerResponse("Please enter a minimum integer vertical height: ", Console.ReadLine());
+
+                DisplayContinuePrompt();
+
+                // Get a maximum height
+                DisplayReset();
+                DisplayPromptMessage("Enter a maximum vertical height: ");
+
+                maximumVertical = ConsoleUtil.ValidateIntegerResponse("Please enter a minimum integer vertical height: ", Console.ReadLine());
+
+                DisplayContinuePrompt();
+
+                // Display new range
+                DisplayReset();
+
+                DisplayMessage($"Minimum run height: {minimumVertical}");
+                DisplayMessage($"Maximum run height: {maximumVertical}");
+
+                DisplayMessage("");
+
+                if (maximumVertical < minimumVertical)
+                {
+                    // if error in range, ask fro request
+                    DisplayMessage("An invalid range has been entered.");
+                    DisplayMessage("The minimum height exceeds the maximum height.");
+                    DisplayMessage("Please enter an appropriate range to query from.");
+
+                    Console.ReadKey(true);
+                }
+                else
+                {
+                    DisplayContinuePrompt();
+                    break;
+                }
+            }
+
+            // display list of ski runs in the range
+            List<SkiRun> skiRunsQuery = new List<SkiRun>();
+
+            skiRunsQuery = skiRuns.FindAll((skiRun) => (skiRun.Vertical >= minimumVertical && skiRun.Vertical <= maximumVertical));
+
+            DisplayReset();
+
+            if (skiRunsQuery.Count != 0)
+            {
+                DisplayMessage($"Below are the ski runs between {minimumVertical} and {maximumVertical}.");
+                DisplayMessage();
+
+                DisplayAllSkiRunsWithoutResettingDisplay(skiRunsQuery);
+            }
+            else
+            {
+                DisplayMessage($"There were no ski runs between {minimumVertical} and {maximumVertical}.");
+            }
+        }
+
+
+        // Helper functions
+        /// <summary>
+        /// Prompts the user to select a ski run by ID
+        /// </summary>
+        /// <param name="skiRuns">The list of ski runs to get an ID from</param>
+        /// <returns></returns>
+        public static int GetSkiRunID(List<SkiRun> skiRuns)
+        {
+            int skiRunID = -1;
+
+            DisplayAllSkiRuns(skiRuns);
+
+            DisplayMessage("");
+            DisplayPromptMessage("Enter the ID of a ski run: ");
+
+            int idTemp = ConsoleUtil.ValidateIntegerResponse("Please enter a valid ski run ID: ", Console.ReadLine());
+
+            foreach (SkiRun s in skiRuns)
+            {
+                if (s.ID == idTemp)
+                {
+                    skiRunID = idTemp;
+                    break;
+                }
+            }
+
+            return skiRunID;
+        }
+
+        /// <summary>
+        /// Prompts the user to enter the ID for a new ski run.
+        /// The ID must be unique and cannot be in the list or be lower than 1.
+        /// </summary>
+        /// <param name="skiRuns">The list of ski runs to add to</param>
+        /// <returns></returns>
+        public static int GetNewSkiRunID(List<SkiRun> skiRuns)
+        {
+            DisplayReset();
+            DisplayPromptMessage("Enter the ID for a new ski run: ");
+
+            int idTemp = ConsoleUtil.ValidateIntegerResponse(
+                "Please enter the ID for a new ski run (make sure your ID is not already used): ",
+                Console.ReadLine());
+
+            if (idTemp > 0)
+            {
+                foreach (SkiRun s in skiRuns)
+                {
+                    if (s.ID == idTemp)
+                    {
+                        idTemp = -1;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                idTemp = -2;
+            }
+
+            return idTemp;
+        }
+
+        /// <summary>
+        /// Prompts the user to enter the name for a new ski run.
+        /// The string shouldn't be empty or contain commas.
+        /// </summary>
+        /// <returns></returns>
+        public static string GetNewSkiRunName()
+        {
+            DisplayReset();
+            DisplayPromptMessage("Enter the name for a new ski run: ");
+
+            string nameTemp = ConsoleUtil.ValidateStringResponse("Please enter a non-empty name for the string (remove any commas): ",
+                Console.ReadLine().Trim(),
+                (s) => { return (!s.Contains(",") && !string.IsNullOrEmpty(s)); } );
+            
+            return nameTemp;
+        }
+
+        /// <summary>
+        /// Prompts the user to enter the height for a new ski run
+        /// </summary>
+        /// <param name="success">Is true if the user's input is valid</param>
+        /// <returns></returns>
+        public static int GetNewSkiRunVertical(out bool success)
+        {
+            DisplayReset();
+            DisplayPromptMessage("Enter the vertical for a new ski run: ");
+
+            int idTemp = ConsoleUtil.ValidateIntegerResponse(
+                "Please enter the vertical height for a new ski run (must be a positive integer): ",
+                Console.ReadLine());
+
+            success = (idTemp >= 0);
+
+            if (!success)
+                return -1;
+            else
+                return idTemp;
         }
 
         /// <summary>
@@ -282,7 +587,6 @@ namespace SkiRunRater
 
             Console.CursorVisible = true;
         }
-
 
         /// <summary>
         /// display the Exit prompt
@@ -389,28 +693,6 @@ namespace SkiRunRater
             Console.Write(messageLines[messageLines.Count() - 1]);
         }
 
-        public static int GetSkiRunID(List<SkiRun> skiRuns)
-        {
-            int skiRunID = -1;
-
-            DisplayAllSkiRuns(skiRuns);
-
-            DisplayMessage("");
-            DisplayPromptMessage("Enter the ski run ID: ");
-
-            int idTemp = ConsoleUtil.ValidateIntegerResponse("Please enter a valid ski run ID : ", Console.ReadLine());
-
-            foreach (SkiRun s in skiRuns)
-            {
-                if (s.ID == idTemp)
-                {
-                    skiRunID = idTemp;
-                    break;
-                }
-            }
-
-            return skiRunID;
-        }
 
         #endregion
     }
